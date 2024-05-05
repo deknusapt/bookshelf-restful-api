@@ -1,6 +1,7 @@
 const { nanoid } = require('nanoid');
 const books = require('./books');
 
+// handler for adding books
 const addBookHandler = (request, h) => {
   const {
     name,
@@ -11,8 +12,9 @@ const addBookHandler = (request, h) => {
     pageCount,
     readPage,
     reading,
-  } = request.payload;
+  } = request.payload; // body requested
 
+  // check if name is empty, return fail
   if (name === undefined) {
     const response = h.response({
       status: 'fail',
@@ -21,6 +23,7 @@ const addBookHandler = (request, h) => {
     return response.code(400);
   }
 
+  // checking the readPage, if above the pageCount return fail
   if (readPage > pageCount) {
     const response = h.response({
       status: 'fail',
@@ -50,9 +53,11 @@ const addBookHandler = (request, h) => {
     updatedAt,
   };
 
+  // pushing array into books.js
   books.push(newBook);
   const isSuccess = books.filter((book) => book.id === id).length > 0;
 
+  // if push success, return 200 with books ID
   if (isSuccess) {
     const response = h.response({
       status: 'success',
@@ -122,4 +127,94 @@ const getAllBooksByIdHandler = (request, h) => {
   return response.code(404);
 };
 
-module.exports = { addBookHandler, getAllBooksHandler, getAllBooksByIdHandler };
+const editBooksByIdHandler = (request, h) => {
+  const { id } = request.params;
+  const {
+    name,
+    year,
+    author,
+    summary,
+    publisher,
+    pageCount,
+    readPage,
+    reading,
+  } = request.payload;
+
+  const updatedAt = new Date().toISOString;
+
+  const index = books.findIndex((book) => book.id === id);
+
+  if (index !== -1) {
+    if (name === undefined) {
+      const response = h.response({
+        status: 'fail',
+        message: 'Gagal memperbarui buku. Mohon isi nama buku',
+      });
+      return response.code(400);
+    }
+    if (readPage > pageCount) {
+      const response = h.response({
+        status: 'fail',
+        message: 'Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount',
+      });
+      return response.code(400);
+    }
+
+    const finished = (readPage === pageCount); // books is finished, if readPage equals to pageCount
+
+    books[index] = {
+      ...books[index],
+      name,
+      year,
+      author,
+      summary,
+      publisher,
+      pageCount,
+      readPage,
+      finished,
+      reading,
+      updatedAt,
+    };
+
+    const response = h.response({
+      status: 'success',
+      message: 'Buku berhasil diperbarui',
+    });
+    return response.code(200);
+  }
+
+  const response = h.response({
+    status: 'fail',
+    message: 'Gagal memperbarui buku. Id tidak ditemukan',
+  });
+  return response.code(404);
+};
+
+const deleteBooksByIdHandler = (request, h) => {
+  const { id } = request.params;
+
+  const index = books.findIndex((book) => book.id === id);
+
+  if (index !== -1) {
+    books.splice(index, 1);
+    const response = h.response({
+      status: 'success',
+      message: 'Buku berhasil dihapus',
+    });
+    return response.code(200);
+  }
+
+  const response = h.response({
+    status: 'fail',
+    message: 'Buku gagal dihapus. Id tidak ditemukan',
+  });
+  return response.code(404);
+};
+
+module.exports = {
+  addBookHandler,
+  getAllBooksHandler,
+  getAllBooksByIdHandler,
+  editBooksByIdHandler,
+  deleteBooksByIdHandler,
+};
